@@ -1,0 +1,105 @@
+## Launch packages and set working directory
+
+library(signal) 
+library(plotrix) 
+
+setwd("")
+getwd()
+rm(list=ls())
+
+## Open file #######################################################
+
+EAG <- read.table("type_the_name_of_your_file_here.txt",header=F,sep="\t") 
+colnames(EAG) <- c("Time","Signal","Stim")
+
+# In that case, I exported only the time period that corresponds to stimulations with a given odor [1700-2000s]. You can either do that for each odor, or export everything and then store pulses of each odor into a different "onset" object (e.g. "onset_octenol", "onset_lilac" etc.)
+
+## Define Objects #############################################
+
+Time <- EAG$Time
+Signal <- EAG$Signal
+Stim <- EAG$Stim
+
+## Detect CS stimulations ###########################################
+
+Stim2 = Stim>1000
+dStim = diff(Stim2) #calculates the differences between all consecutive values of a vector
+onset <- dStim>0
+onset <- which(dStim %in% c(1))+1 #looks for multiple matching of values equal to 1. Adds +1 to the position because of the way diff works.
+onset 		# onset will thus contain timestamps for the beginning of pulses.
+
+# WARNING : Sampling rate :5kHz (1sec = 5000pts) for the file I worked with. Change to match your experimental setup.  
+bf = 50				# time before the the onset of the pulse 
+af = 350			# time after the onset of the pulse
+
+before <- onset-(bf-1)				
+after <- onset+af	
+a <- bf
+c <- a+af
+
+b <- length(onset)
+
+
+# To plot what these functions do:
+par(mfrow=c(4,1))
+plot(Stim, type="l")
+plot(Stim2, type="l")
+plot(dStim, type="l")
+plot(onset, type="p")
+
+
+## Average responses #################################################
+
+	# Response to Stim, centered around zero	
+	
+baseline <- matrix(0,a,length(onset))	
+for (i in 1:b)
+{
+	baseline[,i] <- Signal[before[i]:onset[i]] 
+}
+baseline <- apply(baseline,2,mean)     # "2" because mean value before EACH stimulation	
+
+
+stimResp <- matrix(0,c,length(onset))	
+for (i in 1:b)
+{
+	stimResp[,i] <- Signal[before[i]:after[i]]-baseline[i] 
+}
+
+##  responses to each pulse and plot  ######################################
+
+# Responses to each pulse are stored in the columns of the "Resp" matrix.
+Resp <- matrix(0, c, b)
+for (i in 1:b)
+{
+	Resp[,i] <- stimResp[,i]
+}
+
+##  plot the response to each individual pulse  ############################
+par(mfrow=c(5,2))
+for (i in 1:b)
+{
+	plot(Resp[,i] , type="l", xlab = "")
+	abline(v=50, col= "red", lty=2)
+}
+
+
+## Average response and plot ##############################################
+
+meanResp <- apply(Resp,1,mean)
+SEM <- apply(Resp,1, std.error)
+up <- meanResp+SEM
+down <- meanResp-SEM
+
+	x <- seq(1, length(meanResp),1)
+
+plot(meanResp, type="l", xlab = "", ylab = "", ylim= c(-200, 70)) 
+polygon(c(x, rev(x)), c((up), rev(down)), col = rgb(0.8,0.4,0.1,1/4), border = NA)
+			rect(50,49,100,51,col = "black")
+			abline(h=0,col="blue",lty=2)
+	
+	
+#  In this example I plot the mean +or- the SEM. If you want to do something else, such as the first and last quartiles, use the same approach, e.g.:
+#quantResp <- apply(Resp,1,quantile)
+#firstResp <- quantResp[2,]
+#lastResp <- quantResp[4,]
