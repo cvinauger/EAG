@@ -28,9 +28,9 @@ onset <- dStim>0
 onset <- which(dStim %in% c(1))+1 #looks for multiple matching of values equal to 1. Adds +1 to the position because of the way diff works.
 onset 		# onset will thus contain timestamps for the beginning of pulses.
 
-# WARNING : Sampling rate :5kHz (1sec = 5000pts) for the file I worked with. Change to match your experimental setup.  
-bf = 50				# time before the the onset of the pulse 
-af = 350			# time after the onset of the pulse
+# WARNING : Sampling rate :20Hz (1sec = 20pts) for the file I worked with. Change to match your experimental setup.  
+bf = 400				# time before the the onset of the pulse 
+af = 360			# time after the onset of the pulse
 
 before <- onset-(bf-1)				
 after <- onset+af	
